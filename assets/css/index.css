@@ -1,0 +1,15 @@
+body {
+  padding: 0px;
+}
+#map{
+  width: 100%;
+  height: 93%;
+  position: absolute;
+  border: 4px solid #f7f7f7;
+}
+.chart{
+#width: 1024px;
+height: 140px;
+background-color: #f7f7f7;
+opacity: 1;
+}

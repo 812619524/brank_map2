@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>中国银行</title>
+  <link rel="shortcut icon" href="../assets/images/logo.png" type="image/x-icon"/>
+  <link rel="stylesheet" href="../assets/lib/bootstrap-3.3.7/css/bootstrap.css"/>
+  <link rel="stylesheet" href="../assets/lib/bootstrap-select-1.12.4/css/bootstrap-select.css"/>
+  <link rel="stylesheet" href="../assets/lib/leaflet/leaflet.css"/>
+  <link rel="stylesheet" href="../assets/css/font-awesome.min.css"/>
+  <link rel="stylesheet" href="../assets/css/index.css"/>
+  <!-- Plugin -->  
+  <script src="../assets/lib/leaflet/leaflet.js"></script> 
+  <script src="../assets/js/jquery.min.js"></script>
+  <script src="../assets/lib/bootstrap-3.3.7/js/bootstrap.js"></script>
+  <script src="../assets/lib/bootstrap-select-1.12.4/js/bootstrap-select.min.js"></script>
+  <script src="../assets/js/leaflet.canvas-markers.js"></script>
+  <script src="../assets/js/leaflet-echarts.js"></script>
+  <script src="../assets/js/leaflet-heat.js"></script>
+  <script src="../assets/lib/echarts/echarts.min.js"></script>
+  <!-- BIZ --> 
+  <script src="../assets/js/boc-bi-biz.js"></script>
+  <!-- DataSet --> 
+  <script src="../assets/data/01_boc_bank.json"></script>
+  <script src="../assets/data/02_boc_pois.json"></script>
+  <script src="../assets/data/03_boc_heat_ordinary_enterprisies.json"></script>
+  <script src="../assets/data/04_boc_heat_sszt_gth_loc_json"></script>  
+</head>
+<body>
+<!-- Serach -->
+<div class="row">
+<!-- Banks -->
+  <div class="col-xs-5 select">
+    <div class="form-group">
+	  <i class="fa fa-crosshairs fa-lg" style="color:#999999"></i>&nbsp;&nbsp;<h8>定位</h8>&nbsp;&nbsp;
+      <select id="qBank" class="selectpicker" data-live-search="true" data-size=6
+        onchange="mCenter(this)">
+      </select>
+    </div>
+  </div>
+<!-- Pois -->
+  <ul class="nav nav-pills">
+    <li role="presentation" class="active">
+	  <a  href="javascript:mPois('tyyh')" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">同业网点 <span class="caret"></span></a>
+	  <ul class="dropdown-menu" >		
+		<li id="gsyh" role="presentation"><a href="javascript:mPois('gsyh')">工商银行</a></li>
+		<li id="jsyh" role="presentation"><a href="javascript:mPois('jsyh')">建设银行</a></li>
+		<li id="nyyh" role="presentation"><a href="javascript:mPois('nyyh')">农业银行</a></li>
+		<li id="zsyh" role="presentation"><a href="javascript:mPois('zsyh')">招商银行</a></li> 
+        <li id="tyyh" role="presentation"><a href="javascript:mPois('tyyh')">其他银行</a></li>		
+	  </ul>
+    </li>     			
+    <li id="zzyh" role="presentation"><a href="javascript:mPois('zzyh')">自助银行</a></li>
+    <li id="zfdw" role="presentation"><a href="javascript:mPois('zfdw')">政府单位</a></li>
+    <li id="zzxq" role="presentation"><a href="javascript:mPois('zzxq')">住宅小区</a></li>
+    <li id="xx" role="presentation"><a href="javascript:mPois('xx')">学校</a></li>
+    <li id="yy" role="presentation"><a href="javascript:mPois('yy')">综合医院</a></li>
+    <li id="gwzx" role="presentation"><a href="javascript:mPois('gwzx')">购物中心</a></li>
+    <li id="sc" role="presentation"><a href="javascript:mPois('sc')">大型超市</a></li>
+    <li id="syj" role="presentation"><a href="javascript:mPois('syj')">商业街</a></li>	
+    <li id="dxwd" role="presentation"><a href="javascript:mPois('dxwd')">电信营业厅</a></li>
+    <li id="cyy" role="presentation"><a href="javascript:mPois('cyy')">产业园</a></li>
+    <li id="xzl" role="presentation"><a href="javascript:mPois('xzl')">商务办公楼</a></li>
+    <li id="dtz" role="presentation"><a href="javascript:mPois('dtz')">地铁站</a></li>
+    <li id="gjz" role="presentation"><a href="javascript:mPois('gjz')">公交站</a></li>
+	<li role="presentation" >
+	  <a href="javascript:mPois('rlt')" class="dropdown-toggle" data-toggle="dropdown" role="button"  aria-haspopup="true" aria-expanded="false">热力图 <span class="caret"></span></a>
+	  <ul class="dropdown-menu">		
+		<li id="qy" role="presentation"><a href="javascript:mPois('qy')">企业</a></li>
+		<li id="gth" role="presentation"><a href="javascript:mPois('gth')">个体户</a></li>
+	  </ul>
+    </li> 		
+  </ul>
+</div>
+<!-- Leaflet -->
+<div id="map"></div>
+
+<script type="text/javascript">
+  var map;
+  var ciLayer;
+  
+  $(function () {
+  
+     // 1. 初始化
+	 map = L.map('map', { zoomControl: false, attributionControl: false }).setView([22.541189, 114.116414], 16).addLayer(L.tileLayer('../assets/images/0755/{z}/{x}/{y}.png', { minZoom: 11, maxZoom: 18, preferCanvas: true }));
+     ciLayer = L.canvasIconLayer().addTo(map);  
+	 L.control.zoom({ position:'topright' }).addTo(map); 
+	 
+     // 2. 网点对比
+	 L.Control.Legend = L.Control.extend({ 
+	   options: { 
+	       position: 'topright' 
+	   },
+       initialize: function (options) {
+           L.Util.extend(this.options, options); 
+       },
+       onAdd: function (map) { 
+           this._container = L.DomUtil.create('div', 'info legend');
+		   
+           var chart = document.createElement('div'); 
+           chart.id = 'cChart'; 
+		   chart.className = 'info chart'
+           this._chart = chart; 
+		   
+           this._container.innerHTML = cFilter();
+           this._container.appendChild(this._chart);
+		   
+           return this._container;
+       },
+     });
+	 	 
+     L.control.legend = function (options) { return new L.Control.Legend(options); }
+     L.control.legend({ position: 'bottomright' }).addTo(map);
+	 		 
+     // 3. 网点选框
+     mBanks();
+     // 4. 网点标签
+     mLabels();
+     // 5. 网点标注
+     mMarks();	    	 
+	 
+  });
+  
+  
+</script>
+</body>
+</html>
